@@ -28,13 +28,13 @@ composer install
 ```
 If you don't have a `vendor` folder, this command will generate it.
 
-##### 3. Copy and Configure `.env` File  
+##### 3. Configure `.env` File  
 Update the `.env` file with your database details:  
 ```plaintext
 DB_CONNECTION=mysql  
 DB_HOST=127.0.0.1  
 DB_PORT=3306  
-DB_DATABASE=your_database_name  
+DB_DATABASE=nuvprojectmanagement  
 DB_USERNAME=root  
 DB_PASSWORD=your_password  
 ```

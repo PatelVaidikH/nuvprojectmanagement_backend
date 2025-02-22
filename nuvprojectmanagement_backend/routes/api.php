@@ -1,0 +1,12 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\userManagement\loginController;
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
+
+Route::get("/login", [loginController::class,"login"]);
+Route::post("/loginPost", [loginController::class,"loginPost"]);

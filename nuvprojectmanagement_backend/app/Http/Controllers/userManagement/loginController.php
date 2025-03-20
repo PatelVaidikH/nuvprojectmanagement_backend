@@ -14,12 +14,15 @@ class loginController extends Controller
     {
         // $email = 'harshil.h.brahmani@nuv.ac.in';
         // $pass = 'qwedcv';
+        // vaidik.h.patel@nuv.ac.in
+        $email = 'ninad.bhavsar@nuv.ac.in';
+        $pass = 'ninad.bhavsar@nuv.ac.in';
         // $email = 'aarya.mehta@nuv.ac.in';
         // $pass = 'aarya';
         // $email = 'yogeshc@nuv.ac.in';
         // $pass = 'qwerty';        
-        // $user_password = WebEncryption::securePassword($pass, $email);
-        // dd($user_password);
+        $user_password = WebEncryption::securePassword($pass, $email);
+        dd($user_password);
 
         // $users = DB::table('usermaster')->get(); // Fetch all users
 
@@ -74,6 +77,7 @@ class loginController extends Controller
             'Status' => 'SUCCESS',
             'Data' => 'Login successful',
             'userId' => $userCredentials->user_id,
+            'user_email_address' => $userCredentials->user_email_address,
             'Type' => $userCredentials->user_type=== 'S' ? 'Student' : 'Teacher',
         ], 200);
     }

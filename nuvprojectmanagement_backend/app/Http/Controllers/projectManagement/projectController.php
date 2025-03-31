@@ -19,6 +19,7 @@ class projectController extends Controller
                 um.user_id AS user_id,
                 um.user_name AS student_name,
                 um.user_email_address AS student_email,
+                um.enrollment_id AS enrollment_id,
                 pgm.group_id AS group_id, 
                 pgm.group_id_actual AS id, 
                 pm.project_id AS project_id, 
@@ -33,11 +34,11 @@ class projectController extends Controller
                 LEFT JOIN guidemaster gm ON pgm.guide_number = gm.guide_id  
                 LEFT JOIN projecttypemaster ptm ON pgm.project_type_id = ptm.project_type_id
                 LEFT JOIN projectmaster pm ON pm.project_group_id = pgm.group_id
-                WHERE um.user_id = ?
+                WHERE pm.project_id = ?
                 GROUP BY pgm.group_id, pgm.group_id_actual, pm.project_id, ptm.project_type_name, 
                         um.program, pgm.group_name, pgm.project_status, gm.guide_name, 
                         um.user_id, um.user_name, um.user_email_address;", 
-                [$request->input('userId')]
+                [$request->input('project_id')]
             );
 
             // return response()->json([
@@ -50,7 +51,7 @@ class projectController extends Controller
                 if (!isset($groupedData[$row->group_id])) {
                     $groupedData[$row->group_id] = [
                         'group_id' => $row->group_id,
-                        'ProjectType' => $row->project_type,
+                        'ProjectType' => $row->type,
                         'GuideName' => $row->guide,
                         'FinalizedTopic' => $row->title,
                         'teamMembers' => []
@@ -60,7 +61,6 @@ class projectController extends Controller
                 $groupedData[$row->group_id]['teamMembers'][] = [
                     'enrollment_id' => $row->enrollment_id,
                     'StudentName' => $row->student_name,
-                    'project_lead' => $row->project_lead,
                     'EmailID' => $row->student_email,
                 ];
             }

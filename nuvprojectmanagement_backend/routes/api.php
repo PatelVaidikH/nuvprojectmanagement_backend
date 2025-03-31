@@ -22,3 +22,6 @@ Route::post('/viewLogDetail', [projectController::class, 'viewLogDetail']);
 
 
 Route::post('/guideDashboard', [guideController::class, 'guideDashboard']);
+Route::post('/groupInfoEvaluation', [guideController::class, 'groupInfoEvaluation']);
+Route::post('/submitMidSemesterGrades', [guideController::class, 'submitMidSemesterGrades']);
+Route::post('/aprroveMidSemesterGrades', [guideController::class, 'aprroveMidSemesterGrades']);

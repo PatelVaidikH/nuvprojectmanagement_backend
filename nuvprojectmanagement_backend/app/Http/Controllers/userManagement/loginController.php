@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\userManagement;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\CustomHelpers\WebEncryption;
@@ -15,8 +16,8 @@ class loginController extends Controller
         // $email = 'harshil.h.brahmani@nuv.ac.in';
         // $pass = 'qwedcv';
         // vaidik.h.patel@nuv.ac.in
-        $email = 'ninad.bhavsar@nuv.ac.in';
-        $pass = 'ninad.bhavsar@nuv.ac.in';
+        $email = 'vaibhavik@nuv.ac.in';
+        $pass = 'vaibhavik@nuv.ac.in';
         // $email = 'aarya.mehta@nuv.ac.in';
         // $pass = 'aarya';
         // $email = 'yogeshc@nuv.ac.in';
@@ -72,13 +73,14 @@ class loginController extends Controller
             ], 401);
         }
         Session::put('user_id', $userCredentials->user_id);
+        
     
         return response()->json([
             'Status' => 'SUCCESS',
             'Data' => 'Login successful',
             'userId' => $userCredentials->user_id,
             'user_email_address' => $userCredentials->user_email_address,
-            'Type' => $userCredentials->user_type=== 'S' ? 'Student' : 'Teacher',
+            'userType' => $userCredentials->user_type=== 'S' ? 'Student' : 'Teacher',
         ], 200);
     }
 

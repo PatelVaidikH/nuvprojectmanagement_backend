@@ -159,7 +159,7 @@ class projectController extends Controller
     
         // Check if data exists
         if ($submissionData->isEmpty()) {
-            return response()->json(['Status' => 'ERROR', 'Message' => 'No data found'], 404);
+            return response()->json([]);
         }
     
         // Prepare response

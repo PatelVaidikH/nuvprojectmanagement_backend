@@ -175,60 +175,83 @@ class guideController extends Controller
 
 
 
-    public function aprroveMidSemesterGrades(Request $request)
+    // public function aprroveMidSemesterGrades(Request $request)
+    // {
+    //     // Check password (replace 'your_secret_password' with actual stored password logic)
+    //     // $user_id = $request->session()->get('user_id'); 
+    //     // return response()->json($user_id->user_id, 200);
+
+    //     $userCredentials = DB::table('usermaster as um')
+    //         ->leftJoin('guidemaster as gm', 'um.user_id', '=', 'gm.user_id')
+    //         ->where('um.user_id', 4)
+    //         ->select('um.user_email_address', 'gm.approval_password')
+    //         ->first();
+    //         return response()->json($userCredentials, 200);
+
+    //     $hashedPassword = WebEncryption::securePassword($request->password, $userCredentials->user_email_address);
+
+    //     if ($hashedPassword !== $userCredentials->approval_password) {
+    //         return response()->json(['message' => 'Unauthorized'], 401);
+    //     }
+    //     try {
+    //         DB::beginTransaction();
+
+    //         foreach ($request->grades as $grade) {
+    //             DB::table('projectgroupmembertable')
+    //                 ->where('group_id', $request->groupId)  // Common where condition
+    //                 ->where('user_id', $grade['id'])  // Per-student condition
+    //                 ->updateOrInsert(
+    //                     ['user_id' => $grade['id'], 'group_id' => $request->groupId], // Ensures it checks both conditions
+    //                     [
+    //                         'guide_marks_30' => $grade['guide'] ?? null,
+    //                         'jury_marks_30' => $grade['external'] ?? null,
+    //                         'sum_60' => $grade['total'] ?? null,
+    //                         'evaluation_status' => $grade['status'] ?? 'Present',
+    //                         'mid_sem_locked' => 1,
+    //                         'marks_updated_on' => now(),
+    //                         'marks_updated_by' => $user_id,
+    //                     ]
+    //                 );
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'message' => 'Grades submitted successfully'
+    //         ], 200);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'error' => 'Failed to submit grades',
+    //             'details' => $e->getMessage()
+    //         ], 500);
+    //     }
+
+
+    //     return response()->json(['message' => 'Grades submitted successfully'], 200);
+    // }
+
+    public function viewMidSemMarks(Request $request)
     {
-        // Check password (replace 'your_secret_password' with actual stored password logic)
-        // $user_id = $request->session()->get('user_id'); 
-        // return response()->json($user_id->user_id, 200);
-
-        $userCredentials = DB::table('usermaster as um')
-            ->leftJoin('guidemaster as gm', 'um.user_id', '=', 'gm.user_id')
-            ->where('um.user_id', 4)
-            ->select('um.user_email_address', 'gm.approval_password')
-            ->first();
-            return response()->json($userCredentials, 200);
-
-        $hashedPassword = WebEncryption::securePassword($request->password, $userCredentials->user_email_address);
-
-        if ($hashedPassword !== $userCredentials->approval_password) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-        try {
-            DB::beginTransaction();
-
-            foreach ($request->grades as $grade) {
-                DB::table('projectgroupmembertable')
-                    ->where('group_id', $request->groupId)  // Common where condition
-                    ->where('user_id', $grade['id'])  // Per-student condition
-                    ->updateOrInsert(
-                        ['user_id' => $grade['id'], 'group_id' => $request->groupId], // Ensures it checks both conditions
-                        [
-                            'guide_marks_30' => $grade['guide'] ?? null,
-                            'jury_marks_30' => $grade['external'] ?? null,
-                            'sum_60' => $grade['total'] ?? null,
-                            'evaluation_status' => $grade['status'] ?? 'Present',
-                            'mid_sem_locked' => 1,
-                            'marks_updated_on' => now(),
-                            'marks_updated_by' => $user_id,
-                        ]
-                    );
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Grades submitted successfully'
-            ], 200);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'error' => 'Failed to submit grades',
-                'details' => $e->getMessage()
-            ], 500);
-        }
-
-
-        return response()->json(['message' => 'Grades submitted successfully'], 200);
+        $grades = DB::table('projectgroupmembertable')
+                ->join('usermaster', 'usermaster.user_id', '=', 'projectgroupmembertable.user_id')
+                ->where('group_id', $request->groupId)
+                ->select(
+                    'usermaster.user_id',
+                    'usermaster.user_name',
+                    'usermaster.enrollment_id',
+                    'projectgroupmembertable.group_id',
+                    'projectgroupmembertable.guide_marks_30',
+                    'projectgroupmembertable.jury_marks_30',
+                    'projectgroupmembertable.sum_60',
+                    'projectgroupmembertable.evaluation_status'
+                )
+                ->get();
+            
+        return response()->json([
+            'grades' => $grades,
+            'groupId' => $request->groupId
+        ]);
     }
 }

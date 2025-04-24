@@ -90,6 +90,7 @@ class projectController extends Controller
                 pgm.group_id_actual AS id, 
                 pm.project_id AS project_id, 
                 ptm.project_type_name AS type, 
+                ptm.project_type_id AS project_type_id, 
                 um.program AS course, 
                 pgm.group_name AS title, 
                 pgm.project_status AS status, 
@@ -102,36 +103,90 @@ class projectController extends Controller
                 LEFT JOIN projectmaster pm ON pm.project_group_id = pgm.group_id
                 WHERE um.user_id = ?
                 GROUP BY pgm.group_id, pgm.group_id_actual, pm.project_id, ptm.project_type_name, 
-                        um.program, pgm.group_name, pgm.project_status, gm.guide_name, 
+                        ptm.project_type_id, um.program, pgm.group_name, pgm.project_status, gm.guide_name, 
                         um.user_id, um.user_name, um.user_email_address;", 
                 [$request->input('userId')]
             );
 
-        // return response()->json($results, 200);
-        $formattedData = array_map(function ($row) {
-            return [
-                "project_id" => $row->project_id,
-                "id" => $row->id, 
-                "type" => $row->type, 
-                "course" => $row->course, 
-                "title" => $row->title, 
-                "status" => $row->status, 
-                "guide" => $row->guide
-            ];
-        }, $results);
-        
-
-        // Return formatted JSON response
-        return response()->json([
-            'Status' => 'SUCCESS',
-            'Data' => $formattedData
-        ], 200);
+            $formattedData = array_map(function ($row) {
+                // Get evaluation components status
+                $components = $this->getEvaluationStatusForProject($row->group_id, $row->project_type_id);
+                
+                return [
+                    "project_id" => $row->project_id,
+                    "id" => $row->id, 
+                    "type" => $row->type, 
+                    "course" => $row->course, 
+                    "title" => $row->title, 
+                    "status" => $row->status, 
+                    "guide" => $row->guide,
+                    "components" => $components // Add components with evaluation status
+                ];
+            }, $results);
+            
+            // Return formatted JSON response
+            return response()->json([
+                'Status' => 'SUCCESS',
+                'Data' => $formattedData
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'Status' => 'ERROR',
                 'Message' => 'Error retrieving data: ' . $e->getMessage()
-            ], 500);}
+            ], 500);
+        }
+    }
+
+    // Helper method to check evaluation status for a project
+    private function getEvaluationStatusForProject($groupId, $projectTypeId)
+    {
+        // Get the parent components for this project type
+        $components = DB::table('maxmarkstable as parent')
+            ->join('projecttype_maxmark_map as ptmm', 'ptmm.maxmark_id', '=', 'parent.srno')
+            ->where('ptmm.project_type_id', $projectTypeId)
+            ->whereNull('parent.parent_id')
+            ->select('parent.srno', 'parent.max_mark_detail')
+            ->get();
+
+        // Get all students in the group
+        $students = DB::table('projectgroupmembertable as pgm')
+            ->where('pgm.group_id', $groupId)
+            ->select('pgm.member_id')
+            ->get();
+            
+        $result = [];
+        
+        foreach ($components as $component) {
+            // Get subcomponents
+            $subComponents = DB::table('maxmarkstable as child')
+                ->join('projecttype_maxmark_map as ptmm', 'ptmm.maxmark_id', '=', 'child.srno')
+                ->where('ptmm.project_type_id', $projectTypeId)
+                ->where('child.parent_id', $component->srno)
+                ->select('child.srno')
+                ->get()
+                ->pluck('srno');
+                
+            // Count how many evaluations have been done
+            $evaluationsDone = DB::table('projectevaluationtable')
+                ->where('project_id', $groupId)
+                ->whereIn('evaluation_component_id', $subComponents)
+                ->whereIn('member_id', $students->pluck('member_id'))
+                ->count();
+                
+            // Total needed evaluations: students count × subcomponents count
+            $totalNeeded = $students->count() * $subComponents->count();
+            
+            // Evaluation is done if all marks have been entered
+            $evaluationDone = ($totalNeeded > 0 && $evaluationsDone == $totalNeeded);
+            
+            $result[] = [
+                'title' => $component->max_mark_detail,
+                'evaluation_done' => $evaluationDone
+            ];
+        }
+        
+        return $result;
     }
     
     public function logsList(Request $request)
@@ -150,11 +205,14 @@ class projectController extends Controller
                 'plm.created_on as log_created_on',
                 'plm.project_log_id',
                 'creator.user_name as log_created_by',
+                'psm.guide_approval_on',
+                'guide.user_name as guide_approval_by',
                 'psm.first_sign_on',
                 'first_signer.user_name as first_sign_by',
                 'psm.second_sign_on',
                 'second_signer.user_name as second_sign_by'
             )
+            ->orderBy('plm.created_on', 'desc')
             ->get(); // Fetch all records
     
         // Check if data exists
@@ -174,6 +232,12 @@ class projectController extends Controller
                     'status' => !empty($data->log_created_on),
                     'date' => $data->log_created_on ? date('d/m/Y', strtotime($data->log_created_on)) : null,
                     'by' => $data->log_created_by ?? null,
+                ],
+
+                'guideApproval' => [
+                'status' => !empty($data->guide_approval_on),
+                'date' => $data->guide_approval_on ? date('d/m/Y', strtotime($data->guide_approval_on)) : null,
+                'by' => $data->guide_approval_by ?? null,
                 ],
     
                 'firstSign' => [

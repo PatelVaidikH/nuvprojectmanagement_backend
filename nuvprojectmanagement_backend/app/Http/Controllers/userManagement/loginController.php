@@ -79,9 +79,51 @@ class loginController extends Controller
             'Status' => 'SUCCESS',
             'Data' => 'Login successful',
             'userId' => $userCredentials->user_id,
+            'userName' => $userCredentials->user_name,
             'user_email_address' => $userCredentials->user_email_address,
             'userType' => $userCredentials->user_type=== 'S' ? 'Student' : 'Teacher',
         ], 200);
     }
+
+    public function resetPassword(Request $request)
+    {
+        try {
+            $user = DB::table('usermaster')
+                ->where('user_id', $request->user_id)
+                ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'Status' => 'ERROR',
+                    'message' => 'User not found.',
+                ], 404);
+            }
+
+            // Hash new password using your custom encryption method
+            $hashedNewPassword = WebEncryption::securePassword($request->newPassword, $user->user_email_address);
+
+            // Update the password
+            DB::table('usermaster')
+                ->where('user_id', $request->user_id)
+                ->update([
+                    'login_password' => $hashedNewPassword,
+                    'updated_on' => now(),
+                    'updated_by' => $request->user_id,
+                ]);
+
+            return response()->json([
+                'Status' => 'SUCCESS',
+                'message' => 'Password reset successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'Status' => 'ERROR',
+                'message' => 'Failed to reset password.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
 }

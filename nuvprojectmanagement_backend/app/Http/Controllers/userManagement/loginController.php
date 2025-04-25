@@ -16,8 +16,8 @@ class loginController extends Controller
         // $email = 'harshil.h.brahmani@nuv.ac.in';
         // $pass = 'qwedcv';
         // vaidik.h.patel@nuv.ac.in
-        $email = 'vaibhavik@nuv.ac.in';
-        $pass = 'vaibhavik@nuv.ac.in';
+        $email = 'admin@nuvsetu.com';
+        $pass = 'admin@nuvsetu.com';
         // $email = 'aarya.mehta@nuv.ac.in';
         // $pass = 'aarya';
         // $email = 'yogeshc@nuv.ac.in';
@@ -81,7 +81,9 @@ class loginController extends Controller
             'userId' => $userCredentials->user_id,
             'userName' => $userCredentials->user_name,
             'user_email_address' => $userCredentials->user_email_address,
-            'userType' => $userCredentials->user_type=== 'S' ? 'Student' : 'Teacher',
+            'userType' => $userCredentials->user_type === 'S' ? 'Student' :
+             ($userCredentials->user_type === 'T' ? 'Teacher' :
+             ($userCredentials->user_type === 'A' ? 'Admin' : 'Not a valid user')),
         ], 200);
     }
 

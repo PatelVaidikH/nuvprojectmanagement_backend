@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\userManagement\loginController;
 use App\Http\Controllers\projectManagement\projectController;
 use App\Http\Controllers\guideManagement\guideController;
+use App\Http\Controllers\adminManagement\superAdminController;
 use App\Http\Controllers\Testing;
 
 Route::get('/user', function (Request $request) {
@@ -34,7 +35,8 @@ Route::post('/getEvaluationDetails', [guideController::class, 'getEvaluationDeta
 Route::post('/submitMarks', [guideController::class, 'submitMarks']);
 
 
-
+Route::get('/getGuideWiseProjectReport', [superAdminController::class, 'getGuideWiseProjectReport']);
+Route::get('/getAllEvaluationDetails', [superAdminController::class, 'getAllEvaluationDetails']);
 
 
 
@@ -46,5 +48,5 @@ Route::post('/submitMarks', [guideController::class, 'submitMarks']);
 
 
 // Testing Controllers
-Route::get('/getAllEvaluationDetails', [Testing::class, 'getAllEvaluationDetails']);
+// Route::get('/getAllEvaluationDetails', [Testing::class, 'getAllEvaluationDetails']);
 Route::post('/getEvaluationComponentsByProject', [Testing::class, 'getEvaluationComponentsByProject']);

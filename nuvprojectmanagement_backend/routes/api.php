@@ -33,6 +33,7 @@ Route::post('/viewMidSemMarks', [guideController::class, 'viewMidSemMarks']);
 Route::post('/fetchProjectsByUserId', [guideController::class, 'fetchProjectsByUserId']);
 Route::post('/getEvaluationDetails', [guideController::class, 'getEvaluationDetails']);
 Route::post('/submitMarks', [guideController::class, 'submitMarks']);
+// Route::post('/updateMarks', [guideController::class, 'updateMarks']);
 
 
 Route::get('/getGuideWiseProjectReport', [superAdminController::class, 'getGuideWiseProjectReport']);

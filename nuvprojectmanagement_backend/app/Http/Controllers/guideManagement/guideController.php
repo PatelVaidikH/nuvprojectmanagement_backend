@@ -332,6 +332,7 @@ class guideController extends Controller
     //     return response()->json($result);
     // }
 
+    //defaulter
     public function getEvaluationDetails(Request $request)
     {
         $groupId = $request->group_id;
@@ -461,38 +462,244 @@ class guideController extends Controller
             ]
         ]);
     }
+
+    //role based
+    // public function getEvaluationDetails(Request $request)
+    // {
+    //     $groupId = $request->group_id;
+    //     $userId = $request->user_id;
+    //     $role = strtoupper($request->role); // Expect 'G' for Guide or 'E' for External
+
+    //     if (!in_array($role, ['G', 'E'])) {
+    //         return response()->json(['error' => 'Invalid role'], 400);
+    //     }
+
+    //     $project = DB::table('projectgroupmaster')
+    //         ->where('group_id', $groupId)
+    //         ->first();
+
+    //     if (!$project) {
+    //         return response()->json(['error' => 'Project not found'], 404);
+    //     }
+
+    //     $projectTypeId = $project->project_type_id;
+
+    //     $components = DB::table('maxmarkstable as parent')
+    //         ->join('projecttype_maxmark_map as ptmm', 'ptmm.maxmark_id', '=', 'parent.srno')
+    //         ->where('ptmm.project_type_id', $projectTypeId)
+    //         ->whereNull('parent.parent_id')
+    //         ->select('parent.srno', 'parent.max_mark_detail', 'parent.max_mark_value')
+    //         ->get();
+
+    //     $students = DB::table('projectgroupmembertable as pgm')
+    //         ->join('usermaster as um', 'pgm.user_id', '=', 'um.user_id')
+    //         ->where('pgm.group_id', $groupId)
+    //         ->select('pgm.user_id', 'um.user_name', 'um.enrollment_id')
+    //         ->get();
+
+    //     $componetData = [];
+    //     foreach ($components as $component) {
+    //         $children = DB::table('maxmarkstable as child')
+    //             ->join('projecttype_maxmark_map as ptmm', 'ptmm.maxmark_id', '=', 'child.srno')
+    //             ->where('ptmm.project_type_id', $projectTypeId)
+    //             ->where('child.parent_id', $component->srno)
+    //             ->where('child.marks_by', $role) // 🔒 Role-based filter
+    //             ->select('child.srno', 'child.max_mark_detail', 'child.max_mark_value', 'child.marks_by')
+    //             ->get();
+
+    //         $subComponents = [];
+    //         $isLocked = true;
+
+    //         foreach ($children as $child) {
+    //             $marksData = DB::table('projectevaluationtable as pet')
+    //                 ->join('projectgroupmembertable as pgm', 'pgm.member_id', '=', 'pet.member_id')
+    //                 ->join('usermaster as um', 'um.user_id', '=', 'pgm.user_id')
+    //                 ->where('pet.project_id', $groupId)
+    //                 ->where('pet.evaluation_component_id', $child->srno)
+    //                 ->select('um.enrollment_id', 'pet.marks_value')
+    //                 ->get();
+
+    //             $marks = $marksData->pluck('marks_value', 'enrollment_id')->toArray();
+
+    //             foreach ($students as $student) {
+    //                 if (!array_key_exists($student->enrollment_id, $marks)) {
+    //                     $isLocked = false;
+    //                     break;
+    //                 }
+    //             }
+
+    //             $subComponents[] = [
+    //                 'title' => $child->max_mark_detail,
+    //                 'component_id' => $child->srno,
+    //                 'role' => $child->marks_by,
+    //                 'max_marks' => $child->max_mark_value,
+    //                 'marks' => $marks,
+    //             ];
+    //         }
+
+    //         // If there are subcomponents for the current role, include the parent
+    //         if (!empty($subComponents)) {
+    //             $componetData[] = [
+    //                 'title' => $component->max_mark_detail,
+    //                 'component_id' => $component->srno,
+    //                 'locked' => $isLocked,
+    //                 'sub_components' => $subComponents,
+    //             ];
+    //         }
+    //     }
+
+    //     $grades = [];
+    //     foreach ($students as $student) {
+    //         $gradeRow = [
+    //             'id' => $student->user_id,
+    //             'name' => $student->user_name,
+    //             'enrollment' => $student->enrollment_id,
+    //         ];
+
+    //         foreach ($componetData as $comp) {
+    //             $compTitle = $comp['title'];
+    //             $gradeRow[$compTitle] = [];
+
+    //             $totalMarks = 0;
+
+    //             foreach ($comp['sub_components'] as $sub) {
+    //                 $evaluation = DB::table('projectevaluationtable as pet')
+    //                     ->join('projectgroupmembertable as pgm', 'pgm.member_id', '=', 'pet.member_id')
+    //                     ->where('pgm.user_id', $student->user_id)
+    //                     ->where('pet.project_id', $groupId)
+    //                     ->where('pet.evaluation_component_id', $sub['component_id'])
+    //                     ->select('pet.marks_value', 'pet.member_status')
+    //                     ->first();
+
+    //                 $marks = $evaluation->marks_value ?? '';
+    //                 $status = $evaluation->member_status ?? 'yet to enter marks';
+
+    //                 if (is_numeric($marks)) {
+    //                     $totalMarks += $marks;
+    //                 }
+
+    //                 $gradeRow[$compTitle][$sub['title']] = [
+    //                     'marks' => $marks,
+    //                     'status' => $status,
+    //                 ];
+    //             }
+
+    //             $gradeRow[$compTitle]['Total'] = $totalMarks;
+    //         }
+
+    //         $grades[] = $gradeRow;
+    //     }
+
+    //     return response()->json([
+    //         'Status' => 'Success',
+    //         'Data' => [
+    //             'group_id' => $groupId,
+    //             'project_title' => $project->group_name,
+    //             'user_id' => $userId,
+    //             'components' => $componetData,
+    //             'grades' => $grades
+    //         ]
+    //     ]);
+    // }
+
     
 
+    // public function submitMarks(Request $request)
+    // {
+    //     $groupId = $request->groupId;
+    //     $components = $request->components;
+    
+    //     $rawMembers = DB::table('projectgroupmembertable as pgm')
+    //         ->join('usermaster as um', 'pgm.user_id', '=', 'um.user_id')
+    //         ->where('pgm.group_id', $groupId)
+    //         ->select('pgm.member_id', 'um.enrollment_id')
+    //         ->get();
+    
+    
+    //     $members = $rawMembers->mapWithKeys(function ($item) {
+    //         return [(string) $item->enrollment_id => $item->member_id];
+    //     });
+    
+    
+    //     foreach ($components as $component) {
+    //         foreach ($component['sub_components'] as $sub) {
+    //             $evaluationComponentId = $sub['component_id'];
+    //             $marksData = $sub['marks']; // Expecting [enrollment_id => ['mark' => ..., 'status' => ...]]
+                
+    
+    //             foreach ($marksData as $enrollment => $markEntry) {
+    //                 if (!isset($members[$enrollment])) {
+    //                     continue;
+    //                 }
+    
+    //                 $memberId = $members[$enrollment];
+    
+    //                 // If frontend sent mark + status as an object
+    //                 if (is_array($markEntry)) {
+    //                     $marksValue = $markEntry['mark'] === "" ? null : $markEntry['mark'];
+    //                     $status = $markEntry['status'] ?? (is_null($marksValue) ? 'yet to enter marks' : 'Present');
+    //                 } else {
+    //                     // fallback (in case frontend sent raw marks)
+    //                     $marksValue = $markEntry === "" ? null : $markEntry;
+    //                     $status = is_null($marksValue) ? 'yet to enter marks' : 'Present';
+    //                 }
+
+    
+    //                 try {
+    //                     DB::table('projectevaluationtable')->updateOrInsert(
+    //                         [
+    //                             'project_id' => (int)$groupId,
+    //                             'evaluation_component_id' => (int)$evaluationComponentId,
+    //                             'member_id' => (int)$memberId,
+    //                         ],
+    //                         [
+    //                             'marks_value' => $marksValue,
+    //                             'member_status' => $status,
+    //                         ]
+    //                     );
+
+    //                 } catch (\Exception $e) {
+    //                     \Log::error("DB update failed for $enrollment: " . $e->getMessage());
+    //                 }
+    //             }
+    //         }
+    //     }
+    
+    //     return response()->json([
+    //         'Status' => 'Success',
+    //         'Message' => 'Marks submitted successfully.',
+    //     ]);
+    // }
     public function submitMarks(Request $request)
     {
         $groupId = $request->groupId;
         $components = $request->components;
-    
+        $userRole = $request->userRole; 
+        $userId = $request->user_id; // Get the current user's ID for created_by/updated_by
+        $currentTime = now(); // Get the current timestamp for created_on/updated_on
+
         $rawMembers = DB::table('projectgroupmembertable as pgm')
             ->join('usermaster as um', 'pgm.user_id', '=', 'um.user_id')
             ->where('pgm.group_id', $groupId)
             ->select('pgm.member_id', 'um.enrollment_id')
             ->get();
-    
-    
+
         $members = $rawMembers->mapWithKeys(function ($item) {
             return [(string) $item->enrollment_id => $item->member_id];
         });
-    
-    
+
         foreach ($components as $component) {
             foreach ($component['sub_components'] as $sub) {
                 $evaluationComponentId = $sub['component_id'];
                 $marksData = $sub['marks']; // Expecting [enrollment_id => ['mark' => ..., 'status' => ...]]
                 
-    
                 foreach ($marksData as $enrollment => $markEntry) {
                     if (!isset($members[$enrollment])) {
                         continue;
                     }
-    
+
                     $memberId = $members[$enrollment];
-    
+
                     // If frontend sent mark + status as an object
                     if (is_array($markEntry)) {
                         $marksValue = $markEntry['mark'] === "" ? null : $markEntry['mark'];
@@ -503,27 +710,51 @@ class guideController extends Controller
                         $status = is_null($marksValue) ? 'yet to enter marks' : 'Present';
                     }
 
-    
                     try {
-                        DB::table('projectevaluationtable')->updateOrInsert(
-                            [
+                        // Check if the record already exists
+                        $exists = DB::table('projectevaluationtable')
+                            ->where([
                                 'project_id' => (int)$groupId,
                                 'evaluation_component_id' => (int)$evaluationComponentId,
                                 'member_id' => (int)$memberId,
-                            ],
-                            [
-                                'marks_value' => $marksValue,
-                                'member_status' => $status,
-                            ]
-                        );
+                            ])
+                            ->exists();
 
+                        if ($exists) {
+                            // Update existing record with updated_by and updated_on
+                            DB::table('projectevaluationtable')
+                                ->where([
+                                    'project_id' => (int)$groupId,
+                                    'evaluation_component_id' => (int)$evaluationComponentId,
+                                    'member_id' => (int)$memberId,
+                                ])
+                                ->update([
+                                    'marks_value' => $marksValue,
+                                    'member_status' => $status,
+                                    'updated_by' => $userId,
+                                    'updated_on' => $currentTime,
+                                ]);
+                        } else {
+                            // Insert new record with created_by and created_on
+                            DB::table('projectevaluationtable')
+                                ->insert([
+                                    'project_id' => (int)$groupId,
+                                    'evaluation_component_id' => (int)$evaluationComponentId,
+                                    'member_id' => (int)$memberId,
+                                    'marks_value' => $marksValue,
+                                    'member_status' => $status,
+                                    'marks_by' => $userRole,
+                                    'created_by' => $userId,
+                                    'created_on' => $currentTime,
+                                ]);
+                        }
                     } catch (\Exception $e) {
                         \Log::error("DB update failed for $enrollment: " . $e->getMessage());
                     }
                 }
             }
         }
-    
+
         return response()->json([
             'Status' => 'Success',
             'Message' => 'Marks submitted successfully.',

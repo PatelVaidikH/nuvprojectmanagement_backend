@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class projectController extends Controller
 {
@@ -221,10 +224,10 @@ class projectController extends Controller
         }
     
         // Prepare response
-        $response = [];
+        $logsList = [];
     
         foreach ($submissionData as $data) {
-            $response[] = [
+            $logsList[] = [
                 'date' => date('d/m/Y', strtotime($data->log_created_on)),
                 'log_id' => $data->project_log_id,
     
@@ -253,10 +256,29 @@ class projectController extends Controller
                 ],
             ];
         }
+
+        $documents = DB::table('projectdocumenttable')
+        ->where('project_id', $request->input('project_id'))
+        ->select('document_id', 'document_title', 'document_name_user', 'document_path', 'created_on')
+        ->orderBy('created_on', 'desc')
+        ->get();
+
+        $documentsList = $documents->map(function ($doc) {
+            return [
+                'document_id' => $doc->document_id,
+                'title' => $doc->document_title,
+                'name' => $doc->document_name_user,
+                'path' => $doc->document_path,
+                'uploadedOn' => $doc->created_on ? date('d/m/Y', strtotime($doc->created_on)) : null,
+            ];
+        });
     
         return response()->json([
             'Status' => 'SUCCESS',
-            'Data' => $response
+            'Data' => [
+                'logsList' => $logsList,
+                'documentsList' => $documentsList
+            ]
         ]);
     }
     
@@ -315,16 +337,16 @@ class projectController extends Controller
     public function addNewLog(Request $request)
     {
         \Log::info('Received request:', $request->all());
-        $data = $request->json()->all();
+        // $data = $request->json()->all();
 
         $logId = DB::table('projectlogsmaster')->insertGetId([
-            'project_id' => $data['project_id'],
-        'previous_meeting_outcome' => $data['previous_meeting_outcome'] ?? null,
-        'discussion_points' => $data['discussion_points'] ?? null,
-        'expected_outcome' => $data['expected_outcome'] ?? null,
-        'plan_for_next_meeting' => $data['plan_for_next_meeting'] ?? null,
+        'project_id' => $request->project_id,
+        'previous_meeting_outcome' => $request->previous_meeting_outcome,
+        'discussion_points' => $request->discussion_points,
+        'expected_outcome' => $request->expected_outcome,
+        'plan_for_next_meeting' => $request->plan_for_next_meeting,
         'log_submission_status' => 'submitted',
-        'created_by' => $data['created_by'] ?? null,
+        'created_by' => $request->created_by,
         'created_on' => Carbon::now(),
         ]);
 
@@ -390,7 +412,122 @@ class projectController extends Controller
             'Data' => $response
         ]);
     }
-    
+
+    public function addNewFile(Request $request)
+    {
+        try {
+            $file = $request->file('file');
+
+            // Generate unique name for the file
+            $originalName = $file->getClientOriginalName();
+            $uniqueName = Str::uuid() . '_' . $originalName;
+
+            // Store the file directly to the public path instead of using 'public' disk
+            $publicPath = public_path('project_documents');
+            
+            // Make sure the directory exists
+            if (!file_exists($publicPath)) {
+                mkdir($publicPath, 0777, true);
+            }
+            
+            // Move the uploaded file
+            $file->move($publicPath, $uniqueName);
+            $filePath = 'project_documents/' . $uniqueName;
+
+            // Save metadata to DB
+            DB::table('projectdocumenttable')->insert([
+                'document_title' => $request->document_title,
+                'document_name_system' => $uniqueName,
+                'document_name_user' => $originalName,
+                'document_path' => $filePath, // Path accessible from public directory
+                'created_on' => Carbon::now(),
+                'created_by' => $request->created_by,
+                'project_id' => $request->project_id,
+                'active_status' => 1,
+            ]);
+
+            return response()->json([
+                'status' => 'SUCCESS',
+                'message' => 'File uploaded successfully.',
+                'path' => $filePath,
+            ]);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('File upload error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'ERROR',
+                'message' => 'File upload failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function viewDocument(Request $request)
+    {
+        try {
+            // Fetch document from database
+            $document = DB::table('projectdocumenttable')
+                ->where('document_id', $request->input('document_id'))
+                ->where('active_status', 1)
+                ->first();
+            
+            if (!$document) {
+                return response()->json([
+                    'status' => 'ERROR',
+                    'message' => 'Document not found',
+                ], 404);
+            }
+            
+            // Check if file exists in filesystem
+            $filePath = public_path($document->document_path);
+            if (!file_exists($filePath)) {
+                return response()->json([
+                    'status' => 'ERROR',
+                    'message' => 'File not found on server',
+                ], 404);
+            }
+            
+            // Get file extension
+            $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+            
+            // Determine content type based on extension
+            $contentType = $this->getContentType($extension);
+            
+            // Stream file for viewing
+            return response()->file($filePath, ['Content-Type' => $contentType]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error viewing document: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'ERROR',
+                'message' => 'Failed to view document: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function getContentType($extension)
+    {
+        $contentTypes = [
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'ppt' => 'application/vnd.ms-powerpoint',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'txt' => 'text/plain',
+            'html' => 'text/html',
+            'htm' => 'text/html',
+        ];
+        
+        return $contentTypes[strtolower($extension)] ?? 'application/octet-stream';
+    }
+
     public function viewLogDetail(Request $request)
     {
         $logDetail = DB::table('projectlogsmaster as plm')
@@ -409,6 +546,8 @@ class projectController extends Controller
                 'plm.plan_for_next_meeting',
                 'plm.log_submission_status',
                 'creator.user_name as submitted_by',
+                'psm.guide_approval_on',
+                'guide.user_name as guide_approval_by',
                 'psm.first_sign_on',
                 'first_signer.user_name as first_sign_by',
                 'psm.second_sign_on',
@@ -432,6 +571,11 @@ class projectController extends Controller
                     'status' => $logDetail->log_submission_status === 'submitted',
                     'date' => $logDetail->date ? Carbon::parse($logDetail->date)->format('d/m/Y') : null,
                     'by' => $logDetail->submitted_by ?? null,
+                ],
+                'approved' => [
+                    'status' => !empty($logDetail->guide_approval_on),
+                    'date' => $logDetail->guide_approval_on ? Carbon::parse($logDetail->guide_approval_on)->format('d/m/Y') : null,
+                    'by' => $logDetail->guide_approval_by ?? null,
                 ],
                 'firstSign' => [
                     'status' => !empty($logDetail->first_sign_on),

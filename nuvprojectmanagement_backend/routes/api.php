@@ -22,6 +22,8 @@ Route::post('/logsList', [projectController::class, 'logsList']);
 Route::post('/projectDetails', [projectController::class, 'projectDetails']);
 Route::post('/addNewLog', [projectController::class, 'addNewLog']);
 Route::post('/viewLogDetail', [projectController::class, 'viewLogDetail']);
+Route::post('/addNewFile', [projectController::class, 'addNewFile']);
+Route::post('/viewDocument', [projectController::class, 'viewDocument']);
 
 
 Route::post('/guideDashboard', [guideController::class, 'guideDashboard']);

@@ -16,8 +16,8 @@ class loginController extends Controller
         // $email = 'harshil.h.brahmani@nuv.ac.in';
         // $pass = 'qwedcv';
         // vaidik.h.patel@nuv.ac.in
-        $email = 'admin@nuvsetu.com';
-        $pass = 'admin@nuvsetu.com';
+        $email = 'ashish.jani@nuv.ac.in';
+        $pass = 'ashish.jani@nuv.ac.in';
         // $email = 'aarya.mehta@nuv.ac.in';
         // $pass = 'aarya';
         // $email = 'yogeshc@nuv.ac.in';
@@ -60,8 +60,20 @@ class loginController extends Controller
         if (!$userCredentials) {
             return response()->json([
                 'Status' => 'ERROR',
-                'error' => 'User not found'
+                'error' => 'Invalid Credentials'
             ], 404);
+        }
+
+        // If the user is a teacher, get their designation
+        $userDesignation = null;
+        if ($userCredentials->user_type === 'T') {
+            $guideInfo = DB::table('guidemaster')
+                ->where('user_id', $userCredentials->user_id)
+                ->first();
+            
+            if ($guideInfo) {
+                $userDesignation = $guideInfo->designation;
+            }
         }
 
         $hashedPassword = WebEncryption::securePassword($request->login_password, $userCredentials->user_email_address);
@@ -69,7 +81,7 @@ class loginController extends Controller
         if ($userCredentials->login_password !== $hashedPassword) {
             return response()->json([
                 'Status' => 'ERROR',
-                'error' => 'Incorrect password'
+                'error' => 'Invalid Credentials'
             ], 401);
         }
         Session::put('user_id', $userCredentials->user_id);
@@ -84,6 +96,9 @@ class loginController extends Controller
             'userType' => $userCredentials->user_type === 'S' ? 'Student' :
              ($userCredentials->user_type === 'T' ? 'Teacher' :
              ($userCredentials->user_type === 'A' ? 'Admin' : 'Not a valid user')),
+             'userDesignation' => $userDesignation === 'PC' ? 'program_chair':
+             ($userDesignation === 'DE' ? 'dean' :
+             ($userDesignation === 'G' ? 'guide' : null)),
         ], 200);
     }
 
